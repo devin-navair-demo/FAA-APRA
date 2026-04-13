@@ -212,6 +212,9 @@ public abstract class BaseService {
 				connection = (HttpURLConnection) url.openConnection();
 			}
 			
+			connection.setConnectTimeout(5000);
+			connection.setReadTimeout(5000);
+			
 			/*
 			 * This is the actual HTTP HEAD check to determine if the URL is valid
 			 * and exists on the FAA web server
