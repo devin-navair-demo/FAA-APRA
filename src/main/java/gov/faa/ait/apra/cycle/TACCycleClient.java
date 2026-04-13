@@ -39,9 +39,9 @@ import gov.faa.ait.apra.bootstrap.Config;
  */
 public class TACCycleClient extends DenodoClient {
 	private static final Logger logger = LoggerFactory.getLogger(TACCycleClient.class);
-	private static HashMap <String, ChartCycleElementsJson> current = null;
-	private static HashMap <String, ChartCycleElementsJson> next = null;
-	private static Date tacLastUpdate = null;
+	private static volatile HashMap <String, ChartCycleElementsJson> current = null;
+	private static volatile HashMap <String, ChartCycleElementsJson> next = null;
+	private static volatile Date tacLastUpdate = null;
 	private Date today;
 	
 	/**

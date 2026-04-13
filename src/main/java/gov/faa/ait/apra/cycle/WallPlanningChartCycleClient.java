@@ -39,8 +39,8 @@ import gov.faa.ait.apra.bootstrap.Config;
 public class WallPlanningChartCycleClient extends DenodoClient {
 	private static final Logger logger = LoggerFactory
 			.getLogger(WallPlanningChartCycleClient.class);
-	private static ChartCycleData wpCycle;
-	private static Date wpLastUpdate;
+	private static volatile ChartCycleData wpCycle;
+	private static volatile Date wpLastUpdate;
 	private Date today;
 
 	public WallPlanningChartCycleClient() {

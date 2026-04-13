@@ -46,8 +46,8 @@ import gov.faa.ait.apra.bootstrap.Config;
  */
 public class ChartCycleClient extends DenodoClient {
 	private Date today;
-	private static ChartCycleData chartCycle;
-	private static Date lastCycleUpdate;
+	private static volatile ChartCycleData chartCycle;
+	private static volatile Date lastCycleUpdate;
 	private static final Logger logger = 
 		LoggerFactory.getLogger(ChartCycleClient.class);
 
@@ -88,7 +88,7 @@ public class ChartCycleClient extends DenodoClient {
 	 * @return the chart cycle in Json format bound to the Json POJO 
 	 */
 	@Override
-	public ChartCycleData getChartCycle (Date targetDate, boolean forceUpdate) {
+	public synchronized ChartCycleData getChartCycle (Date targetDate, boolean forceUpdate) {
 		String url;
 		String unbound = "";
 		

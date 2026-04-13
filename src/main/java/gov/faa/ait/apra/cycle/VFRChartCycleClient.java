@@ -38,8 +38,8 @@ import gov.faa.ait.apra.bootstrap.Config;
 
 
 public class VFRChartCycleClient {
-	private static ChartCycleData cycle;
-	private static Date lastUpdate;
+	private static volatile ChartCycleData cycle;
+	private static volatile Date lastUpdate;
 	private Date today;
 	private static String chartCycleTypeCode;
 	private static final Logger logger = LoggerFactory

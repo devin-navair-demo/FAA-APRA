@@ -31,8 +31,8 @@ import gov.faa.ait.apra.cycle.ChartCycleData;
 public class TableChartClient {
 	
 	private static Logger logger = LoggerFactory.getLogger(TableChartClient.class);
-	private static ChartInfoTable sectionalTable;
-	private static Date lastUpdate;
+	private static volatile ChartInfoTable sectionalTable;
+	private static volatile Date lastUpdate;
 	private Date today;
 	
 	/**
@@ -54,7 +54,7 @@ public class TableChartClient {
 		this.today = new Date (date.getTime());
 	}
 	
-	private static void updateTable() {
+	private static synchronized void updateTable() {
 		// initiate call to REST 
 		TableChartClient.lastUpdate = new Date(System.currentTimeMillis());
 		ChartCycleData chartJson = callResource(TableChartClient.lastUpdate); 
