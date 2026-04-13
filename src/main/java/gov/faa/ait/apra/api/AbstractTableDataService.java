@@ -13,7 +13,9 @@
  */
 package gov.faa.ait.apra.api;
 
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 import org.slf4j.Logger;
@@ -227,13 +229,13 @@ public abstract class AbstractTableDataService extends BaseService {
 		gov.faa.ait.apra.jaxb.ObjectFactory of = 
 				new gov.faa.ait.apra.jaxb.ObjectFactory();
 		
-		SimpleDateFormat sdfUSA = new SimpleDateFormat("MM/dd/yyyy");
+		DateTimeFormatter sdfUSA = DateTimeFormatter.ofPattern("MM/dd/yyyy");
 		Edition ed = of.createProductSetEdition();		
 		ed.setGeoname(element.getChart_city_name());
 		
 		if(element.getChart_effective_date()!=null) {
-			ed.setEditionDate(sdfUSA.format(
-				element.getChart_effective_date()));
+			LocalDate editionDate = element.getChart_effective_date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+			ed.setEditionDate(editionDate.format(sdfUSA));
 		}
 		
 		ed.setEditionName(EditionCodeList.fromValue(
