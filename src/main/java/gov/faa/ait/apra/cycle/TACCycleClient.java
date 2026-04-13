@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
+import gov.faa.ait.apra.util.HttpClientProvider;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 
@@ -86,7 +86,7 @@ public class TACCycleClient extends DenodoClient {
 		
 		try {
 			logger.info("Updating the TAC chart cycle cache.");
-			Client client = ClientBuilder.newClient();	
+			Client client = HttpClientProvider.getClient();	
 			
 			WebTarget webTarget = client.target(url);
 			long now = System.currentTimeMillis();

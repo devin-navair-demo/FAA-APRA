@@ -69,9 +69,6 @@ public class IFREnrouteCharts extends BaseService {
 	private static final String LOW = "LOW";
 	private static final String US = "US";
 	private String seriesType = "";
-	private URL downloadURL = null;
-	private ProductSet response = null;
-	private ChartCycleElementsJson cycle = null;
 	private ChartCycleClient client;
 	private static final Logger logger = LoggerFactory
 			.getLogger(IFREnrouteCharts.class);
@@ -132,14 +129,15 @@ public class IFREnrouteCharts extends BaseService {
 				+ ed + "', '" + fmt + "', '" + geo + "', '" + seriesType + "'");
 		ObjectFactory of = new ObjectFactory();
 
-		response = of.createProductSet();
+		ProductSet response = of.createProductSet();
 
-		if (!validateRequest(ed, fmt, geo, seriesType)) {
+		ChartCycleElementsJson cycle = validateRequest(ed, fmt, geo, seriesType, response);
+		if (cycle == null) {
 	    	return Response.status(response.getStatus().getCode()).entity(response).build();
 
 		}
 
-		ProductSet ps = getRelease(cycle);
+		ProductSet ps = getRelease(cycle, response);
     	return Response.status(ps.getStatus().getCode()).entity(ps).build();
 
 	}
@@ -171,15 +169,16 @@ public class IFREnrouteCharts extends BaseService {
 
 		ObjectFactory of = new ObjectFactory();
 
-		response = of.createProductSet();
+		ProductSet response = of.createProductSet();
 
-		if (!this.validateRequest(ed, PDF, ALASKA, LOW)) {
+		ChartCycleElementsJson cycle = this.validateRequest(ed, PDF, ALASKA, LOW, response);
+		if (cycle == null) {
 	    	return Response.status(response.getStatus().getCode()).entity(response).build();
 		}
 		this.setGeoname(null);
 		this.setSeriesType(null);
 		this.setFormat(null);
-		ProductSet ps = getEdition(cycle);
+		ProductSet ps = getEdition(cycle, response);
     	return Response.status(ps.getStatus().getCode()).entity(ps).build();
 
 	}
@@ -190,12 +189,12 @@ public class IFREnrouteCharts extends BaseService {
 	 * @return
 	 */
 
-	public ProductSet getRelease(ChartCycleElementsJson cycle) {
+	public ProductSet getRelease(ChartCycleElementsJson cycle, ProductSet response) {
 		ObjectFactory of = new ObjectFactory();
 		Status status = of.createProductSetStatus();
 		status.setCode(200);
 		status.setMessage("OK");
-		this.response.setStatus(status);
+		response.setStatus(status);
 
 
 		// get set count by format, high-low, and geo area
@@ -228,7 +227,7 @@ public class IFREnrouteCharts extends BaseService {
 				pe.setFile();
 				vfrPath.addPathElement(pe);
 	
-				downloadURL = new URL(Config.getAeronavHost()
+				URL downloadURL = new URL(Config.getAeronavHost()
 						+ vfrPath.getPathAsString());
 				if (!verifyURL(downloadURL)) {
 					logger.warn(downloadURL.toExternalForm()
@@ -334,6 +333,7 @@ public class IFREnrouteCharts extends BaseService {
 	@Override
 	public ProductSet buildResponse(ChartCycleElementsJson cycle) {
 		ObjectFactory of = new ObjectFactory();
+		ProductSet response = of.createProductSet();
 		Status status = of.createProductSetStatus();
 		status.setCode(200);
 		status.setMessage("OK");
@@ -355,13 +355,34 @@ public class IFREnrouteCharts extends BaseService {
 		}
 		product.setProductName(ProductCodeList.IFR_ENROUTE);
 
-		if (downloadURL != null) {
-			product.setUrl(downloadURL.toExternalForm());
-		} else {
-			status.setCode(404);
-			status.setMessage(ErrorCodes.ERROR_404);
+		try {
+			ProductPath vfrPath = new ProductPath();
+			vfrPath.addPathElement(new PathElement(Config.getEnrouteFolder()));
+			SimpleDateFormat sdfUSDash = new SimpleDateFormat(MM_DD_YYYY2);
+			PathElement peDir = new PathElement(sdfUSDash.format(cycle.getChart_effective_date()));
+			vfrPath.addPathElement(peDir);
+			String fileName = this.buildFileName(this.getGeoname(), this.getFormat(), this.seriesType, 1);
+			PathElement pe = new PathElement(fileName);
+			pe.setFile();
+			vfrPath.addPathElement(pe);
+
+			URL downloadURL = new URL(Config.getAeronavHost() + vfrPath.getPathAsString());
+			if (verifyURL(downloadURL)) {
+				product.setUrl(downloadURL.toExternalForm());
+			} else {
+				logger.warn(downloadURL.toExternalForm()
+						+ " returned a non 200 response code when completing a HTTP HEAD check.");
+				status.setCode(404);
+				status.setMessage(ErrorCodes.ERROR_404);
+				product.setUrl("");
+			}
+		} catch (MalformedURLException emalformed) {
+			logger.error("buildResponse", emalformed);
+			status.setCode(500);
+			status.setMessage("Unable to construct a valid URL for the IFR Enroute product.");
 			product.setUrl("");
 		}
+
 		ed.setProduct(product);
 		response.setStatus(status);
 		response.getEdition().add(ed);
@@ -376,7 +397,7 @@ public class IFREnrouteCharts extends BaseService {
 	 * @return
 	 */
 
-	public ProductSet getEdition(ChartCycleElementsJson cycle) {
+	public ProductSet getEdition(ChartCycleElementsJson cycle, ProductSet response) {
 		ObjectFactory of = new ObjectFactory();
 		Status status = of.createProductSetStatus();
 
@@ -399,8 +420,8 @@ public class IFREnrouteCharts extends BaseService {
 		return cycle.getChart_effective_date() != null;
 	}
 
-	private boolean validateRequest(String ed, String fmt, String geo,
-			String seriesType) {
+	private ChartCycleElementsJson validateRequest(String ed, String fmt, String geo,
+			String seriesType, ProductSet response) {
 
 		if (ed == null || ed.isEmpty()) {
 			this.setEdition(CURRENT);
@@ -422,27 +443,30 @@ public class IFREnrouteCharts extends BaseService {
 			logger.error("Expected edition 'current or next' not received '"
 					+ ed
 					+ "' instead. Error response being generated and returned back.");
-			response = getIllegalArgumentError();
-			return false;
+			ProductSet err = getIllegalArgumentError();
+			response.setStatus(err.getStatus());
+			return null;
 		}
 
 		if (!verifyFormat()) {
 			logger.error("Expected format of 'tiff' or 'pdf'. Received format '"
 					+ fmt
 					+ "' instead. Error response being generated and returned");
-			response = getIllegalArgumentError();
-			return false;
+			ProductSet err = getIllegalArgumentError();
+			response.setStatus(err.getStatus());
+			return null;
 		}
 
 		if (!verifyGeo()) {
 			logger.error("Expected 'geo' value, but it is null or empty '"
 					+ geo
 					+ "' Geoname which is a city for which the chart is requested.");
-			response = this
+			ProductSet err = this
 					.getErrorResponse(
 							404,
 							"A Geoname value  is either 'US', 'Alaska', 'Pacific' or 'Caribbean', must be specified for IFR Enroute charts.");
-			return false;
+			response.setStatus(err.getStatus());
+			return null;
 
 		}
 
@@ -450,15 +474,16 @@ public class IFREnrouteCharts extends BaseService {
 			logger.error("Expected 'alt' value, but it is null or empty '"
 					+ seriesType
 					+ "' seriesType the chart is requested which is either 'Low', 'high', or 'area'.");
-			response = this
+			ProductSet err = this
 					.getErrorResponse(
 							404,
 							"A seriesType value  is either 'Low','high', or 'area', must be specified for IFR Enroute charts.");
-			return false;
+			response.setStatus(err.getStatus());
+			return null;
 
 		}
 
-		
+		ChartCycleElementsJson cycle;
 		if (CURRENT.equalsIgnoreCase(this.getEdition())) {
 			cycle = this.client.getCurrent56DayCycle();
 		} else {
@@ -468,23 +493,25 @@ public class IFREnrouteCharts extends BaseService {
 		if (cycle == null) {
 			logger.warn("Unable to locate " + this.getEdition()
 					+ " edition chart for geoname " + this.getGeoname());
-			response = this
+			ProductSet err = this
 					.getErrorResponse(
 							404,
 							"Unable to locate " + this.getEdition()
 									+ " edition chart for geoname "
 									+ this.getGeoname());
-			return false;
+			response.setStatus(err.getStatus());
+			return null;
 		}
 
 		if (!validateParameters(cycle)) {
 			logger.error("Parameters validation failed in getProductRelease.");
-			response = getErrorResponse(404,
+			ProductSet err = getErrorResponse(404,
 					ErrorCodes.ERROR_404);
-			return false;
+			response.setStatus(err.getStatus());
+			return null;
 		}
 
-		return true;
+		return cycle;
 	}
 
 	private boolean verifyGeo() {

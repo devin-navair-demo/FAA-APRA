@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.Locale;
 
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
+import gov.faa.ait.apra.util.HttpClientProvider;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 
@@ -58,7 +58,7 @@ public class USStateReferenceData {
 			StringBuilder url = new StringBuilder();
 			url = url.append(Config.getDenodoHost()).append(Config.getDenodoViewPath()).append("/state_reference?%24format=json");
 			
-			Client client = ClientBuilder.newClient();	
+			Client client = HttpClientProvider.getClient();	
 			
 			WebTarget webTarget = client.target(url.toString());
 			long now = System.currentTimeMillis();

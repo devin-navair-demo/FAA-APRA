@@ -19,10 +19,12 @@ import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
-import org.apache.commons.lang3.text.WordUtils;
+import org.apache.commons.text.WordUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -143,7 +145,7 @@ public abstract class BaseService {
     		this.setChangeFlag(true);
     	}
     	
-    	this.edition = edition == CHANGE_SET ? CURRENT : getEdition();
+    	this.edition = CHANGE_SET.equalsIgnoreCase(edition) ? CURRENT : getEdition();
     	
     	if (! verifyEdition() ) {
     		this.edition = EMPTY_STRING;
@@ -216,6 +218,8 @@ public abstract class BaseService {
 			 * This is the actual HTTP HEAD check to determine if the URL is valid
 			 * and exists on the FAA web server
 			 */
+			connection.setConnectTimeout(5000);
+			connection.setReadTimeout(5000);
 			connection.setRequestMethod("HEAD");
 			int responseCode = connection.getResponseCode();
 			if (responseCode == 200 || responseCode == 302) {
@@ -227,11 +231,11 @@ public abstract class BaseService {
 			}
 		}
 		catch (IllegalArgumentException eillegal) {
-			logger.error("HEAD heck failed for url: "+url.toExternalForm(), eillegal);
+			logger.error("HEAD check failed for url: "+url.toExternalForm(), eillegal);
 			ok = false;
 		}
 		catch (IOException eio) {
-			logger.error("HEAD heck failed for url: "+url.toExternalForm(), eio);
+			logger.error("HEAD check failed for url: "+url.toExternalForm(), eio);
 			ok = false;
 		}
 		
@@ -304,8 +308,9 @@ public abstract class BaseService {
 
     	ProductSet.Edition ed = of.createProductSetEdition();
 	   	
-    	SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
-    	ed.setEditionDate(formatter.format(cycle.getChart_effective_date()));
+    	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy");
+    	LocalDate editionDate = cycle.getChart_effective_date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+    	ed.setEditionDate(editionDate.format(formatter));
     	ed.setEditionNumber(Integer.valueOf(cycle.getChart_cycle_number()));
     	ed.setEditionName(EditionCodeList.fromValue(cycle.getChart_cycle_period_code()));
     	ed.setFormat(FormatCodeList.fromValue(getFormat()));

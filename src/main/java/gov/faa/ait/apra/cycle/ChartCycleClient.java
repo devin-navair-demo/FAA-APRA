@@ -16,11 +16,13 @@
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
+import gov.faa.ait.apra.util.HttpClientProvider;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 
@@ -46,8 +48,8 @@ import gov.faa.ait.apra.bootstrap.Config;
  */
 public class ChartCycleClient extends DenodoClient {
 	private Date today;
-	private static ChartCycleData chartCycle;
-	private static Date lastCycleUpdate;
+	private static volatile ChartCycleData chartCycle;
+	private static volatile Date lastCycleUpdate;
 	private static final Logger logger = 
 		LoggerFactory.getLogger(ChartCycleClient.class);
 
@@ -88,7 +90,7 @@ public class ChartCycleClient extends DenodoClient {
 	 * @return the chart cycle in Json format bound to the Json POJO 
 	 */
 	@Override
-	public ChartCycleData getChartCycle (Date targetDate, boolean forceUpdate) {
+	public synchronized ChartCycleData getChartCycle (Date targetDate, boolean forceUpdate) {
 		String url;
 		String unbound = "";
 		
@@ -108,17 +110,14 @@ public class ChartCycleClient extends DenodoClient {
 		setLastUpdate();
 		
 		try {
-			Client client = ClientBuilder.newClient();	
+			Client client = HttpClientProvider.getClient();	
 			
 			WebTarget webTarget = client.target(url);
 			long now = System.currentTimeMillis();
 			unbound = webTarget.request(MediaType.APPLICATION_XML_TYPE).get(String.class);
 			long duration = System.currentTimeMillis() - now;
 			logger.info("Call for 28/56 day chart cycle took "+duration+" ms");
-			ObjectMapper mapper = new ObjectMapper();
-			mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-			mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
-			setChartCycle (mapper.readValue(unbound.getBytes(Charsets.UTF_16), ChartCycleData.class));
+			setChartCycle (MAPPER.readValue(unbound.getBytes(Charsets.UTF_16), ChartCycleData.class));
 		}
 		catch (IOException ex) {
 			logger.warn("Error getting chart cycle information.", ex);
@@ -252,9 +251,9 @@ public class ChartCycleClient extends DenodoClient {
 	public String getWebTarget (Date targetDate) {
 		StringBuilder url = new StringBuilder();
 		url = url.append(Config.getDenodoHost()+Config.getDenodoCycleResource());
-		SimpleDateFormat formatter = new SimpleDateFormat ("MM/dd/yyyy");
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy");
 		
-		String dateString = formatter.format(targetDate);
+		String dateString = targetDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate().format(formatter);
 		
 		StringBuilder queryString = new StringBuilder();
 		queryString = queryString.append("?query_date="+dateString);
