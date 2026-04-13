@@ -40,7 +40,7 @@ public abstract class DenodoClient {
 	private Date today;
 	private ChartCycleData cycle = null;
 	private static final Logger logger = LoggerFactory.getLogger(ChartCycleClient.class);
-	private static final ObjectMapper MAPPER = createMapper();
+	protected static final ObjectMapper MAPPER = createMapper();
 
 	private static ObjectMapper createMapper() {
 		ObjectMapper mapper = new ObjectMapper();
