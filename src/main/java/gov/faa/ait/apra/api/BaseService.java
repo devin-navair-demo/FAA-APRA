@@ -143,8 +143,6 @@ public abstract class BaseService {
     		this.setChangeFlag(true);
     	}
     	
-    	this.edition = edition == CHANGE_SET ? CURRENT : getEdition();
-    	
     	if (! verifyEdition() ) {
     		this.edition = EMPTY_STRING;
     	}
