@@ -355,9 +355,34 @@ public class IFREnrouteCharts extends BaseService {
 		}
 		product.setProductName(ProductCodeList.IFR_ENROUTE);
 
-		status.setCode(404);
-		status.setMessage(ErrorCodes.ERROR_404);
-		product.setUrl("");
+		try {
+			ProductPath vfrPath = new ProductPath();
+			vfrPath.addPathElement(new PathElement(Config.getEnrouteFolder()));
+			SimpleDateFormat sdfUSDash = new SimpleDateFormat(MM_DD_YYYY2);
+			PathElement peDir = new PathElement(sdfUSDash.format(cycle.getChart_effective_date()));
+			vfrPath.addPathElement(peDir);
+			String fileName = this.buildFileName(this.getGeoname(), this.getFormat(), this.seriesType, 1);
+			PathElement pe = new PathElement(fileName);
+			pe.setFile();
+			vfrPath.addPathElement(pe);
+
+			URL downloadURL = new URL(Config.getAeronavHost() + vfrPath.getPathAsString());
+			if (verifyURL(downloadURL)) {
+				product.setUrl(downloadURL.toExternalForm());
+			} else {
+				logger.warn(downloadURL.toExternalForm()
+						+ " returned a non 200 response code when completing a HTTP HEAD check.");
+				status.setCode(404);
+				status.setMessage(ErrorCodes.ERROR_404);
+				product.setUrl("");
+			}
+		} catch (MalformedURLException emalformed) {
+			logger.error("buildResponse", emalformed);
+			status.setCode(500);
+			status.setMessage("Unable to construct a valid URL for the IFR Enroute product.");
+			product.setUrl("");
+		}
+
 		ed.setProduct(product);
 		response.setStatus(status);
 		response.getEdition().add(ed);
