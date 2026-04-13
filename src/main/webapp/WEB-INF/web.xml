@@ -16,7 +16,7 @@
         </init-param>
         <init-param>
         	<param-name>com.sun.jersey.config.feature.Debug</param-name>
-        	<param-value>true</param-value>
+        	<param-value>false</param-value>
         </init-param>
         <!-- 
         <init-param>
@@ -69,7 +69,7 @@
 			<role-name>*</role-name>
 		</auth-constraint>
 		<user-data-constraint>
-			<transport-guarantee>NONE</transport-guarantee>
+			<transport-guarantee>CONFIDENTIAL</transport-guarantee>
 		</user-data-constraint>
 	</security-constraint>
 </web-app>
