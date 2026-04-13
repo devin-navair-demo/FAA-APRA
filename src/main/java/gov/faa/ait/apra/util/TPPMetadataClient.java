@@ -21,7 +21,7 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
+import gov.faa.ait.apra.util.HttpClientProvider;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 
@@ -145,7 +145,7 @@ public class TPPMetadataClient {
 		try {
 			logger.info("Calling denodo for TPP metadata at "+url.toString());
 			
-			Client client = ClientBuilder.newClient();	
+			Client client = HttpClientProvider.getClient();	
 			WebTarget webTarget = client.target(this.url.toString());
 
 			long now = System.currentTimeMillis();
