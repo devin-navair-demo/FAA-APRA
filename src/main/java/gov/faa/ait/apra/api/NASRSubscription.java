@@ -165,10 +165,13 @@ public class NASRSubscription extends BaseService {
     	try {
     		URL url = new URL(path.toString());
     		
-    		if (Config.getNASRCheckFlag())
-    			verifyURL(url);
-    		
-        	product.setUrl(path.toString());
+    		if (Config.getNASRCheckFlag() && !verifyURL(url)) {
+    			product.setUrl("");
+    			response.getStatus().setCode(404);
+    			response.getStatus().setMessage(ErrorCodes.ERROR_404);
+    		} else {
+    			product.setUrl(path.toString());
+    		}
 
         }
     	catch (Exception exurl) {
