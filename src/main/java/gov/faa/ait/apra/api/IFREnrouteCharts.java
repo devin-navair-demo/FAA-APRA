@@ -355,9 +355,33 @@ public class IFREnrouteCharts extends BaseService {
 		}
 		product.setProductName(ProductCodeList.IFR_ENROUTE);
 
-		status.setCode(404);
-		status.setMessage(ErrorCodes.ERROR_404);
-		product.setUrl("");
+		URL downloadURL = null;
+		try {
+			ProductPath vfrPath = new ProductPath();
+			vfrPath.addPathElement(new PathElement(Config.getEnrouteFolder()));
+			SimpleDateFormat sdfUSDash = new SimpleDateFormat(MM_DD_YYYY2);
+			PathElement peDir = new PathElement(sdfUSDash.format(cycle.getChart_effective_date()));
+			vfrPath.addPathElement(peDir);
+			String fileName = this.buildFileName(this.getGeoname(), this.getFormat(), this.seriesType, 1);
+			PathElement pe = new PathElement(fileName);
+			pe.setFile();
+			vfrPath.addPathElement(pe);
+			downloadURL = new URL(Config.getAeronavHost() + vfrPath.getPathAsString());
+			if (!verifyURL(downloadURL)) {
+				downloadURL = null;
+			}
+		} catch (MalformedURLException e) {
+			logger.error("buildResponse", e);
+			downloadURL = null;
+		}
+
+		if (downloadURL != null) {
+			product.setUrl(downloadURL.toExternalForm());
+		} else {
+			status.setCode(404);
+			status.setMessage(ErrorCodes.ERROR_404);
+			product.setUrl("");
+		}
 		ed.setProduct(product);
 		response.setStatus(status);
 		response.getEdition().add(ed);
