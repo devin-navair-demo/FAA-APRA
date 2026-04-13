@@ -18,7 +18,6 @@ import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 
@@ -31,8 +30,8 @@ import gov.faa.ait.apra.cycle.ChartCycleData;
 public class TableChartClient {
 	
 	private static Logger logger = LoggerFactory.getLogger(TableChartClient.class);
-	private static ChartInfoTable sectionalTable;
-	private static Date lastUpdate;
+	private static volatile ChartInfoTable sectionalTable;
+	private static volatile Date lastUpdate;
 	private Date today;
 	
 	/**
@@ -54,7 +53,7 @@ public class TableChartClient {
 		this.today = new Date (date.getTime());
 	}
 	
-	private static void updateTable() {
+	private static synchronized void updateTable() {
 		// initiate call to REST 
 		TableChartClient.lastUpdate = new Date(System.currentTimeMillis());
 		ChartCycleData chartJson = callResource(TableChartClient.lastUpdate); 
@@ -78,7 +77,7 @@ public class TableChartClient {
 		TableChartClient.lastUpdate = new Date(System.currentTimeMillis());
 		
 		try {
-			Client client = ClientBuilder.newClient();	
+			Client client = HttpClientProvider.getClient();	
 			
 			WebTarget webTarget = client.target(url.toString());
 			
@@ -118,7 +117,7 @@ public class TableChartClient {
 		return update;
 	}
 	
-	public static ChartInfoTable getTable(TableChartClient client) {
+	public static synchronized ChartInfoTable getTable(TableChartClient client) {
 		if(client.updateRequired()) {
 			TableChartClient.updateTable();
 		}

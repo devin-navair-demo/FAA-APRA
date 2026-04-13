@@ -216,6 +216,8 @@ public abstract class BaseService {
 			 * This is the actual HTTP HEAD check to determine if the URL is valid
 			 * and exists on the FAA web server
 			 */
+			connection.setConnectTimeout(5000);
+			connection.setReadTimeout(5000);
 			connection.setRequestMethod("HEAD");
 			int responseCode = connection.getResponseCode();
 			if (responseCode == 200 || responseCode == 302) {
