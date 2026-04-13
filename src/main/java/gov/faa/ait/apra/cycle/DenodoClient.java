@@ -17,7 +17,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
+import gov.faa.ait.apra.util.HttpClientProvider;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 
@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
+
 
 /**
  * Here we are getting the 28 or 56 day chart cycle from the APRA support services. This is a regular chart cycle publication and the dates
@@ -39,6 +40,14 @@ public abstract class DenodoClient {
 	private Date today;
 	private ChartCycleData cycle = null;
 	private static final Logger logger = LoggerFactory.getLogger(ChartCycleClient.class);
+	private static final ObjectMapper MAPPER = createMapper();
+
+	private static ObjectMapper createMapper() {
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		mapper.setDateFormat(new java.text.SimpleDateFormat("yyyy-MM-dd"));
+		return mapper;
+	}
 
 	/**
 	 * Construct the default chart cycle client to obtain the 28 day or 56 day chart cycle from denodo
@@ -89,17 +98,14 @@ public abstract class DenodoClient {
 		String unbound = "";
 		
 		try {
-			Client client = ClientBuilder.newClient();	
+			Client client = HttpClientProvider.getClient();	
 			
 			WebTarget webTarget = client.target(url);
 			long now = System.currentTimeMillis();
 			unbound = webTarget.request(MediaType.APPLICATION_XML_TYPE).get(String.class);
 			long duration = System.currentTimeMillis() - now;
 			logger.info("Call for 28/56 day chart cycle took "+duration+" ms");
-			ObjectMapper mapper = new ObjectMapper();
-			mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-			mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
-			setChartCycle (mapper.readValue(unbound.getBytes(Charsets.UTF_16), ChartCycleData.class));
+			setChartCycle (MAPPER.readValue(unbound.getBytes(Charsets.UTF_16), ChartCycleData.class));
 		}
 		catch (Exception ex) {
 			logger.warn("Error getting chart cycle information.", ex);

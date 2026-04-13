@@ -18,7 +18,6 @@ import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 
@@ -101,7 +100,7 @@ public class SupplementMetadataClient {
 		try {
 			logger.info("Calling denodo for Supplement metadata at "+url.toString());
 			
-			Client client = ClientBuilder.newClient();	
+			Client client = HttpClientProvider.getClient();	
 			WebTarget webTarget = client.target(this.url.toString());
 
 			long now = System.currentTimeMillis();
